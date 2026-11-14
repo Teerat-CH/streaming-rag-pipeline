@@ -53,7 +53,11 @@ def write_tsv(path, header, rows):
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\t".join(header) + "\n")
         for row in rows:
-            fields = [str(x).replace("\t", " ").replace("\n", " ").replace("\r", " ") for x in row]
+            # replace tabs and every kind of line break with a space
+            fields = [str(x).replace("\t", " ").replace("\n", " ").replace("\r", " ")
+                      .replace("\u2028", " ").replace("\u2029", " ").replace("\u0085", " ")
+                      .replace("\x0b", " ").replace("\x0c", " ")
+                      for x in row]
             f.write("\t".join(fields) + "\n")
 
 out = Path(__file__).parent
