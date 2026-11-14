@@ -219,3 +219,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# generated IVF index (pipeline/ivf_index.py)
+index/
