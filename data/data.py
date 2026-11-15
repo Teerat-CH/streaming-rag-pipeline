@@ -1,22 +1,24 @@
-import random
+# use python -m data.data to get data from the MS MARCO document corpus
+# this should use the first 1000 qrels, the queries they reference, and the documents they reference, plus extra documents to reach 10,000 total
+# the extra documents are the first 10,000 corpus documents not already included in the qrels' documents
+
 from pathlib import Path
 
 import ir_datasets
 dataset = ir_datasets.load("msmarco-document/dev")
-random.seed(200)
 
 # test
 # for query in dataset.queries_iter():
-#     print(query)      
+#     print(query)
 #     break
 
 # for qrel in dataset.qrels_iter():
-#     print(qrel)       
+#     print(qrel)
 #     break
 
 # qrels
 # namedtuple<query_id, doc_id, relevance, iteration>
-qrels = list(dataset.qrels_iter())[:200]
+qrels = list(dataset.qrels_iter())[:1000]
 
 # queries based on the query_id from qrels
 # namedtuple<query_id, text>
@@ -29,15 +31,16 @@ doc_ids = {q.doc_id for q in qrels}
 store = dataset.docs_store()
 docs = store.get_many(doc_ids)
 
-# 200 random extra docs with doc_id not in doc_ids
+# extra docs with doc_id not in doc_ids
 # dict: doc_id -> namedtuple<doc_id, url, title, body>
-n_docs = store.count()
-all_docs = dataset.docs_iter()
+n_extra = 10000 - len(docs)
 extra_docs = {}
-while len(extra_docs) < 200:
-    doc = all_docs[random.randrange(n_docs)]
+
+for doc in dataset.docs_iter():
     if doc.doc_id not in doc_ids:
         extra_docs[doc.doc_id] = doc
+        if len(extra_docs) >= n_extra:
+            break
 
 # docs + extra_docs
 # dict: doc_id -> namedtuple<doc_id, url, title, body>
@@ -53,7 +56,11 @@ def write_tsv(path, header, rows):
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\t".join(header) + "\n")
         for row in rows:
-            fields = [str(x).replace("\t", " ").replace("\n", " ").replace("\r", " ") for x in row]
+            # replace tabs and every kind of line break with a space
+            fields = [str(x).replace("\t", " ").replace("\n", " ").replace("\r", " ")
+                      .replace("\u2028", " ").replace("\u2029", " ").replace("\u0085", " ")
+                      .replace("\x0b", " ").replace("\x0c", " ")
+                      for x in row]
             f.write("\t".join(fields) + "\n")
 
 out = Path(__file__).parent
