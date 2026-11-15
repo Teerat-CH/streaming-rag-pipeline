@@ -42,8 +42,8 @@ def run_single_process(path, limit=None):
 
 def _index_partition(lines):
     # One torch thread per worker: N workers x M threads oversubscribe the CPU
-    # and corrupt the measurement. Set before torch is imported by chunk_embed.
-    os.environ["OMP_NUM_THREADS"] = "1"
+    # and corrupt the measurement. set_num_threads works even though torch is
+    # already imported by the time this runs.
     import torch
 
     torch.set_num_threads(1)
@@ -58,8 +58,8 @@ def _index_partition(lines):
             chunk_ids.append(chunk_id)
             texts.append(text)
 
-    # one embed() call per partition, never per row: a row-at-a-time UDF woulddefeat embed()'s internal batching 
-    # and make Spark look slow for the wrong reason. The model loads once per executor process and is then reused.
+    # one embed() call per partition, never per row: a row-at-a-time UDF would defeat embed()'s internal batching 
+    # and make Spark look slow for the wrong reason. The model loads once per python worker process and is then reused across that worker's tasks.
     vectors = embed(texts)
     return zip(chunk_ids, vectors)
 
@@ -68,7 +68,7 @@ def run_spark(spark, path, limit=None, num_partitions=None):
     lines = sc.textFile(path)
 
     # zipWithIndex gives line order, so index 0 is the header. 
-    # # indices 1..limit are exactly the first `limit` rows the baseline reads.
+    # indices 1..limit are exactly the first `limit` rows the baseline reads.
     indexed = lines.zipWithIndex()
     header = indexed.filter(lambda pair: pair[1] == 0).map(lambda pair: pair[0]).first()
     assert header.split("\t") == EXPECTED_HEADER, header
@@ -92,8 +92,8 @@ def run_spark(spark, path, limit=None, num_partitions=None):
 if __name__ == "__main__":
     from pyspark.sql import SparkSession
 
-    # workers must run the same interpreter as the driver, or they miss the
-    # conda env's torch and sentence-transformers
+    # Spark requires workers to run the same Python version as the driver. Without
+    # this it may pick up a different python3 from PATH (we hit 3.11 vs 3.12).
     os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 
     t0 = time.perf_counter()

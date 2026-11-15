@@ -14,11 +14,11 @@ LIMIT = 200
 MASTER = "local[4]"
 ATOL = 1e-5
 
-# Module level, not a fixture: both runs are slow, so do them once. The session
+# Module level so both slow runs happen once and are shared by both tests. The session
 # is left open and dies with the pytest process; `master` can't change on a live
 # SparkSession anyway, so there is nothing to reconfigure between these tests.
-# workers must run the same interpreter as the driver, or they miss the conda
-# env's torch and sentence-transformers
+# Spark requires workers to run the same Python version as the driver. Without
+# this it may pick up a different python3 from PATH (we hit 3.11 vs 3.12).
 os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 
 spark = SparkSession.builder.master(MASTER).appName("test_batch_index").getOrCreate()
