@@ -1,9 +1,10 @@
 # Batch indexing: single-process vs PySpark
 
-Needs Python 3.12 and Java 17 (Spark 4.3 will not run on a newer JDK).
+Needs Python 3.12 and Java 17, the same JDK the streaming job uses.
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)   # Linux: path to your JDK 17
+# point JAVA_HOME at your Java 17 install, e.g. for Homebrew:
+export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
 pip install -r requirements.txt
 
 # run both from the repo root, so `from pipeline...` imports resolve
@@ -30,5 +31,7 @@ The Spark side reads with `sc.textFile` and splits on tab rather than
 newlines stripped, which a plain split parses exactly like the baseline's
 `csv.QUOTE_NONE` reader, while `spark.read.csv`'s quote handling does not.
 
-At 100 docs Spark is the slower of the two: four model loads and one torch
-thread per worker do not pay off until the dataset is much larger.
+At 100 docs Spark is slower. Part of that is fixed cost (Spark startup and
+four model loads), and part is that the single-process run is not single-core:
+PyTorch already spreads it across all cores. A comparison at equal core counts
+is still to come.
