@@ -68,7 +68,7 @@ def run_spark(spark, path, limit=None, num_partitions=None):
     lines = sc.textFile(path)
 
     # zipWithIndex gives line order, so index 0 is the header. 
-    # indices 1...python -m pytest experiment/test_batch_index.py -vlimit are exactly the first `limit` rows the baseline reads.
+    # # indices 1..limit are exactly the first `limit` rows the baseline reads.
     indexed = lines.zipWithIndex()
     header = indexed.filter(lambda pair: pair[1] == 0).map(lambda pair: pair[0]).first()
     assert header.split("\t") == EXPECTED_HEADER, header
