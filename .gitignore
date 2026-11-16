@@ -222,3 +222,6 @@ __marimo__/
 
 # generated IVF index (pipeline/ivf_index.py)
 index/
+
+# stream generated inbox and embeddings
+artifacts/
