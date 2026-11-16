@@ -6,3 +6,5 @@ pyspark==4.3.0
 apache-flink==2.3.0
 ir_datasets==0.6.3
 faiss-cpu==1.16.0
+pyspark==4.3.0
+pytest==9.2.0
